@@ -1963,15 +1963,15 @@ void FastRouteKernel::checkSinksAndSource()
       for (Pin pin : net.getPins()) {
         if (pin.getType() == Pin::SOURCE) {
           sourceCnt++;
-        } else if (pin.getType() == Pin::SINK) {
+        } else { // INPUT or INOUT
           sinkCnt++;
         }
       }
 
-      if ((net.getNumPins() != sinkCnt + sourceCnt) || sourceCnt != 1) {
+      if (sourceCnt > 1) {
         invalid = true;
         std::cout << "[ERROR] Net " << net.getName()
-                  << " has invalid sinks/source distribution\n";
+                  << " has invalid sinks/source distribution (multi-source net detected)\n";
         std::cout << "    #Sinks: " << sinkCnt << "; #sources: " << sourceCnt
                   << "\n";
       }
@@ -2383,6 +2383,7 @@ SteinerTree FastRouteKernel::createSteinerTree(std::vector<ROUTE>& route,
   SteinerTree sTree;
 
   // Add pin nodes
+  Node source;
   for (Pin pin : pins) {
     Coordinate pinPosition;
     int topLayer = pin.getTopLayer();
@@ -2409,16 +2410,28 @@ SteinerTree FastRouteKernel::createSteinerTree(std::vector<ROUTE>& route,
     }
 
     int node_layer = pin.getTopLayer();
+
+    Node node(pinPosition, node_layer, NodeType::INVALID);
+
     NodeType node_type;
     if (pin.getType() == Pin::SINK) {
       node_type = NodeType::SINK;
     } else if (pin.getType() == Pin::SOURCE) {
       node_type = NodeType::SOURCE;
+      source = node;
     } else {
       ord::error("Pin is not assigned with type");
     }
-    Node node(pinPosition, node_layer, node_type);
+    node.setType(node_type);
+
     sTree.addNode(node);
+  }
+
+  // there is either a single one or none due to the sink distribution earlier
+  if (source.getType() == NodeType::INVALID) {
+    source = sTree.popAvgNode(); // improvement: popAverageNode
+    source.setType(NodeType::SOURCE);
+    sTree.addNode(source);
   }
 
   int indexCnt = 0;
@@ -2457,7 +2470,6 @@ SteinerTree FastRouteKernel::createSteinerTree(std::vector<ROUTE>& route,
   std::vector<Segment> parents;
   std::vector<Node> parentsNodes;
   int numSegs = sTree.getSegments().size();
-  Node source = sTree.getSource();
   int parentIdx = -1;
 
   int counter = 0;

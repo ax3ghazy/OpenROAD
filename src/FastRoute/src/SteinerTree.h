@@ -65,6 +65,8 @@ class SteinerTree
   void setSegments(std::vector<Segment> segments) { _segments = segments; }
 
   bool nodeExists(Node node);
+  Node popAvgNode();
+
   bool getNodeIfExists(Node node, Node& requestedNode);
   std::vector<Segment> getNodeSegments(Node node);
 

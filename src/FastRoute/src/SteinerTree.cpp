@@ -36,6 +36,8 @@
 #include "SteinerTree.h"
 
 #include <vector>
+#include <algorithm>
+#include <climits>
 
 namespace FastRoute {
 
@@ -65,6 +67,39 @@ void SteinerTree::addNode(Node node)
       }
     }
   }
+}
+
+Node SteinerTree::popAvgNode() {
+        Node avgNode;
+        Coordinate averagePosition;
+
+        if (_nodes.empty()) {
+          std::cout << "[ERROR] Attempting to get average node in an empty Steiner Tree\n";
+          std::exit(1);
+        }
+
+        // get average position
+        for (Node n : _nodes) {
+          averagePosition = averagePosition + n.getPosition();
+        }
+        averagePosition = averagePosition / _nodes.size();
+
+        // find (Manhattan)-nearest node
+        DBU minDistX = LLONG_MAX, minDistY = LLONG_MAX;
+        for (Node n : _nodes) {
+          DBU distX = llabs(n.getPosition().getX() - averagePosition.getX());
+          DBU distY = llabs(n.getPosition().getY() - averagePosition.getY());
+          if (distX < minDistX && distY < minDistY) {
+            avgNode = n;
+            minDistX = distX;
+            minDistY = distY;
+          }
+        }
+
+        // remove the nearest node
+        _nodes.erase(std::remove(_nodes.begin(), _nodes.end(), avgNode), _nodes.end());
+
+        return avgNode;
 }
 
 void SteinerTree::addSegment(Segment segment)
@@ -123,12 +158,13 @@ Node SteinerTree::getSource()
     if (node.getType() == NodeType::SOURCE) {
       source = node;
       found = true;
+      break;
     }
   }
 
   if (!found) {
     std::cout << "[ERROR] Source not found\n";
-    std::exit(0);
+    std::exit(1);
   }
 
   return source;

@@ -62,6 +62,18 @@ class Coordinate
     return (_x != coord._x || _y != coord._y);
   }
 
+  Coordinate operator+(const Coordinate& coord) const
+  {
+    Coordinate sumCoord(getX()+coord.getX(), getY()+coord.getY());
+    return sumCoord;
+  }
+
+  Coordinate operator/(const int d) const
+  {
+    Coordinate divCoord(getX()/d, getY()/d);
+    return divCoord;
+  }
+
   void setX(const DBU x) { _x = x; }
   void setY(const DBU y) { _y = y; }
   DBU getX() const { return _x; }
